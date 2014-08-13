@@ -3,6 +3,9 @@
 *.lo
 *.o
 *.obj
+*.sln
+*.ncb
+*.vcproj
 
 # Compiled Dynamic libraries
 *.so
