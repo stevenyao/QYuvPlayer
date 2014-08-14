@@ -91,7 +91,18 @@ public:
 		connect(openButton, SIGNAL(clicked()), SLOT(on_openButton_clicked()));
 
 		h2->addWidget(new QGroupBox("Format"));
-		h2->addWidget(new QGroupBox("Resolution"));
+
+		QGroupBox *resGroupBox = new QGroupBox("Resolution");
+		QVBoxLayout *gv2 = new QVBoxLayout();
+		m_widthEdit = new QLineEdit();
+		m_heightEdit = new QLineEdit();
+		m_widthEdit->setInputMask("0000");
+		m_heightEdit->setInputMask("0000");
+		gv2->addWidget(m_widthEdit);
+		gv2->addWidget(m_heightEdit);
+		resGroupBox->setLayout(gv2);
+		h2->addWidget(resGroupBox);
+
 		h2->addWidget(new QGroupBox("FPS"));
 
 		h3->setAlignment(Qt::AlignRight);
@@ -117,7 +128,9 @@ public:
 
 	QSize size() const
 	{
-		return QSize(1920, 1080);
+		QString w = m_widthEdit->text();
+		QString h = m_heightEdit->text();
+		return QSize(w.toInt(), h.toInt());
 	}
 
 	int fps() const
@@ -144,6 +157,8 @@ private slots:
 
 private:
 	QLineEdit *m_fileNameEdit;
+	QLineEdit *m_widthEdit;
+	QLineEdit *m_heightEdit;
 };
 
 class VideoPlayer : public QLabel
