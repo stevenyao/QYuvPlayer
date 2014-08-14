@@ -7,6 +7,13 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QLabel>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QLabel>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QRadioButton>
+#include <QGroupBox>
 
 int convertYUVtoARGB(int y, int u, int v)
 {
@@ -51,12 +58,93 @@ void convertYUV420_NV21toARGB8888(const uchar *data, int width, int height, quin
 
 QPixmap yuvToPixmap(const uchar *data, int w, int h)
 {
-	QScopedPointer<quint32> p(new quint32[w * h]);
+	QImage img(w, h, QImage::Format_ARGB32);
 
-	convertYUV420_NV21toARGB8888(data, w, h, p.data());
-	QImage img((uchar*)p.data(), w, h, QImage::Format_ARGB32);
+	convertYUV420_NV21toARGB8888(data, w, h, (quint32*)img.bits());
+
 	return QPixmap::fromImage(img);
 }
+
+class VideoInfoDialog : public QDialog
+{
+	Q_OBJECT
+
+public:
+	VideoInfoDialog(QWidget *parent)
+		: QDialog(parent)
+	{
+		QVBoxLayout *vlayout = new QVBoxLayout(this);
+		setLayout(vlayout);
+
+		QHBoxLayout *h1 = new QHBoxLayout(this);
+		QHBoxLayout *h2 = new QHBoxLayout(this);
+		QHBoxLayout *h3 = new QHBoxLayout(this);
+
+		vlayout->addLayout(h1);
+		vlayout->addLayout(h2);
+		vlayout->addLayout(h3);
+
+		m_fileNameEdit = new QLineEdit();
+		h1->addWidget(m_fileNameEdit);
+		QPushButton *openButton = new QPushButton("Open");
+		h1->addWidget(openButton);
+		connect(openButton, SIGNAL(clicked()), SLOT(on_openButton_clicked()));
+
+		h2->addWidget(new QGroupBox("Format"));
+		h2->addWidget(new QGroupBox("Resolution"));
+		h2->addWidget(new QGroupBox("FPS"));
+
+		h3->setAlignment(Qt::AlignRight);
+		QPushButton *playButton = new QPushButton("Play");
+		QPushButton *cancelButton = new QPushButton("Cancel");
+		h3->addWidget(playButton);
+		h3->addWidget(cancelButton);
+		connect(playButton, SIGNAL(clicked()), SLOT(on_playButton_clicked()));
+		connect(cancelButton, SIGNAL(clicked()), SLOT(on_cancelButton_clicked()));
+
+		setFixedSize(480, 360);
+	}
+
+	QString fileName() const
+	{
+		return m_fileNameEdit->text();
+	}
+
+	QString format() const
+	{
+		return "yuv420p";
+	}
+
+	QSize size() const
+	{
+		return QSize(1920, 1080);
+	}
+
+	int fps() const
+	{
+		return 30;
+	}
+
+private slots:
+	void on_openButton_clicked()
+	{
+		QString fileName = QFileDialog::getOpenFileName();
+		m_fileNameEdit->setText(fileName);
+	}
+
+	void on_playButton_clicked()
+	{
+		this->done(1);
+	}
+
+	void on_cancelButton_clicked()
+	{
+		this->reject();
+	}
+
+private:
+	QLineEdit *m_fileNameEdit;
+};
 
 class VideoPlayer : public QLabel
 {
@@ -68,6 +156,7 @@ public:
 	{
 		connect(&m_timer, SIGNAL(timeout()), SLOT(on_timeout()));
 		setAlignment(Qt::AlignCenter);
+		setScaledContents(true);
 	}
 
 	~VideoPlayer()
@@ -97,6 +186,11 @@ public:
 
 	void play()
 	{
+		if(m_yuvFile.isOpen())
+		{
+			m_yuvFile.close();
+		}
+
 		m_yuvFile.setFileName(m_fileName);
 		m_yuvFile.open(QIODevice::ReadOnly);
 		m_timer.start(1000 / m_fps);
@@ -138,6 +232,8 @@ public:
 
 		m_videoPlayer = new VideoPlayer(this);
 		setCentralWidget(m_videoPlayer);
+
+		resize(640, 480);
 	}
 
 	~MainWindow()
@@ -148,10 +244,16 @@ public:
 private slots:
 	void on_toolbar_open()
 	{
-		QString fileName = QFileDialog::getOpenFileName(this);
-		m_videoPlayer->setFileName(fileName);
-		m_videoPlayer->setVideoSize(QSize(960, 540));
-		m_videoPlayer->setFps(30);
+		VideoInfoDialog dlg(this);
+		dlg.exec();
+		if(dlg.result() == QDialog::Rejected)
+		{
+			return;
+		}
+
+		m_videoPlayer->setFileName(dlg.fileName());
+		m_videoPlayer->setVideoSize(dlg.size());
+		m_videoPlayer->setFps(dlg.fps());
 		m_videoPlayer->play();
 	}
 
