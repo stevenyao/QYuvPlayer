@@ -74,11 +74,10 @@ public:
 		: QDialog(parent)
 	{
 		QVBoxLayout *vlayout = new QVBoxLayout(this);
-		setLayout(vlayout);
 
-		QHBoxLayout *h1 = new QHBoxLayout(this);
-		QHBoxLayout *h2 = new QHBoxLayout(this);
-		QHBoxLayout *h3 = new QHBoxLayout(this);
+		QHBoxLayout *h1 = new QHBoxLayout();
+		QHBoxLayout *h2 = new QHBoxLayout();
+		QHBoxLayout *h3 = new QHBoxLayout();
 
 		vlayout->addLayout(h1);
 		vlayout->addLayout(h2);
